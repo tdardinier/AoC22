@@ -1,28 +1,21 @@
-n_steps = 28
+# First round
+n_steps = 24
+max_blueprints = 30
+
+# Second round
+n_steps = 32
 max_blueprints = 3
-
-b1 = []
-b1.append((4, 0, 0))
-b1.append((2, 0, 0))
-b1.append((3, 14, 0))
-b1.append((2, 0, 7))
-
-b2 = []
-b2.append((2, 0, 0))
-b2.append((3, 0, 0))
-b2.append((3, 8, 0))
-b2.append((3, 0, 12))
 
 
 f = "input.txt"
 lines = [line[:-1] for line in open(f, "r").readlines()]
 
-blueprints = []
 id_resource = {}
 id_resource["ore"] = 0
 id_resource["clay"] = 1
 id_resource["obsidian"] = 2
 
+blueprints = []
 for line in lines:
     b = []
     l = line.split(".")
@@ -34,59 +27,32 @@ for line in lines:
         b.append((res[0], res[1], res[2]))
     blueprints.append(b)
 
+b1 = []
+b2 = []
+#blueprints = [b1, b2]
+
+b1.append((4, 0, 0))
+b1.append((2, 0, 0))
+b1.append((3, 14, 0))
+b1.append((2, 0, 7))
+
+b2.append((2, 0, 0))
+b2.append((3, 0, 0))
+b2.append((3, 8, 0))
+b2.append((3, 0, 12))
 
 
-blueprints = [b1, b2]
 
-robots = [1, 0, 0, 0]
-
-maxis = {}
-
-# Resources: Ore, clay, obsidian
-# Let's take the last robot out of the equation
-def maximize_geodes(b, time_left, resources, robots):
-    if time_left == 0:
-        return 0
-    k = (time_left, resources, robots)
-    if not k in maxis:
-        new_resources = resources
-
-        # each robot creates one resource
-        new_resources = (resources[0] + robots[0], resources[1] + robots[1], resources[2] + robots[2])
-
-        # First we do nothing
-        m = maximize_geodes(b, time_left - 1, new_resources, robots)
-        
-        l_robots = list(robots)
-        # Let's compare with building robots
-        for i in range(4):
-            # We try to create stuff...
-            new_resources = (resources[0] - b[i][0], resources[1] - b[i][1], resources[2] - b[i][2])
-            is_valid = True
-            for x in new_resources:
-                is_valid = is_valid and x >= 0
-            if is_valid:
-                if i < 3:
-                    l_robots[i] += 1
-                    new_robots = (l_robots[0], l_robots[1], l_robots[2])
-                    new_resources = (new_resources[0] + robots[0], new_resources[1] + robots[1], new_resources[2] + robots[2])
-                    new_geodes = maximize_geodes(b, time_left - 1, new_resources, new_robots)
-                    m = max(m, new_geodes)
-                    l_robots[i] -= 1
-                elif i == 3:
-                    new_resources = (new_resources[0] + robots[0], new_resources[1] + robots[1], new_resources[2] + robots[2])
-                    new_geodes = time_left - 1 + maximize_geodes(b, time_left - 1, new_resources, robots)
-                    m = max(m, new_geodes)
-        maxis[k] = m
-    return maxis[k]
 
 import math
 
 maxis_fast = {}
 # Resources: Ore, clay, obsidian
-def maximize_geodes_fast(b, time_left, resources, robots):
+def maximize_geodes_fast(b, time_left, resources, robots, current_max=0):
     if time_left == 0:
         return 0
+    if current_max >= time_left * (time_left - 1) / 2:
+        return current_max
     k = (time_left, resources, robots)
     if not k in maxis_fast:
         new_resources = resources
@@ -96,7 +62,7 @@ def maximize_geodes_fast(b, time_left, resources, robots):
         m = 0
 
         # We now build...
-        for i in range(4):
+        for i in range(3, -1, -1):
             # let's compute when is the next time we can create robot i
             #minimum_steps = [0, 0, 0]
             n = 0
@@ -119,10 +85,10 @@ def maximize_geodes_fast(b, time_left, resources, robots):
                     new_robots = list(robots)
                     new_robots[i] += 1
                     new_robots = (new_robots[0], new_robots[1], new_robots[2])
-                    c = maximize_geodes_fast(b, time_left - n, new_resources, new_robots)
+                    c = maximize_geodes_fast(b, time_left - n, new_resources, new_robots, m)
                     m = max(m, c)
                 elif i == 3:
-                    c = maximize_geodes_fast(b, time_left - n, new_resources, robots)
+                    c = maximize_geodes_fast(b, time_left - n, new_resources, robots, m - (time_left - n))
                     c += time_left - n # after n time steps, the robot is created, everybody is happy
                     m = max(m, c)
         maxis_fast[k] = m
