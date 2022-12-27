@@ -1,4 +1,9 @@
 import math
+import sys
+import AStar
+
+use_A_star = True
+use_Dijkstra = False
 
 f = "test_input.txt"
 f = "test_input_hard.txt"
@@ -64,6 +69,9 @@ for i in range(n_total):
 
 # Returns the neighbours
 def neighbours(node):
+    # print("Getting neighbours...", node)
+    if node in ["start", "finish"]:
+        return []
     (x, y, t) = node
     neigh = []
     for (dx, dy) in [(0, 0), (0, -1), (0, 1), (-1, 0), (1, 0)]:
@@ -82,37 +90,69 @@ def neighbours(node):
                 neigh.append((nx, ny, nt))
     return neigh
 
-
-import networkx as netx
-G = netx.DiGraph()
-
-if True:
-    for t in range(n_total):
-        for x in range(m):
-            for y in range(-1, n + 1):
-                if (y >= 0 and y < n) or (x, y) == start or (x, y) == end:
-                    for nei in neighbours((x, y, t)):
-                       G.add_edge((x, y, t), nei)
-
-path1 = netx.shortest_path(G, (start[0], start[1], 0), "finish")
-t1 = len(path1) - 1
-print("First path (Dijkstra)", t1)
-
-path2 = netx.shortest_path(G, (end[0], end[1], t1 % n_total), "start")
-t2 = len(path2) - 1
-print("Second path (Dijkstra)", t2)
-
-path3 = netx.shortest_path(G, (start[0], start[1], (t1 + t2) % n_total), "finish")
-t3 = len(path3) - 1
-print("Third path (Dijkstra)", t3)
-
-print("Solution (Dijkstra)", t1 + t2 + t3)
-
-#
+def heur_to_finish(node):
+    x, y = None, None
+    if node == "finish":
+        return 0
+    elif node == "start":
+        x, y = start
+    else:
+        (x, y, _) = node
+    return abs(x - end[0]) + abs(y - end[1])
 
 
 
+def heur_to_start(node):
+    x, y = None, None
+    if node == "finish":
+        x, y = end
+    elif node == "start":
+        return 0
+    else:
+        (x, y, _) = node
+    return abs(x - start[0]) + abs(y - start[1])
 
+
+if use_A_star:
+    node1 = AStar.find_path(neighbours, (start[0], start[1], 0), "finish", heur_to_finish)
+    t1 = node1.cost
+    print("First path (A*)", t1)
+
+    node2 = AStar.find_path(neighbours, (end[0], end[1], t1 % n_total), "start", heur_to_start)
+    t2 = node2.cost
+    print("Second path (A*)", t2)
+
+    node3 = AStar.find_path(neighbours, (start[0], start[1], (t1 + t2) % n_total), "finish", heur_to_finish)
+    t3 = node3.cost
+    print("Third path (A*)", t3)
+
+    print("Solution (A*)", t1 + t2 + t3)
+
+if use_Dijkstra:
+    import networkx as netx
+    G = netx.DiGraph()
+
+    if True:
+        for t in range(n_total):
+            for x in range(m):
+                for y in range(-1, n + 1):
+                    if (y >= 0 and y < n) or (x, y) == start or (x, y) == end:
+                        for nei in neighbours((x, y, t)):
+                           G.add_edge((x, y, t), nei)
+
+    path1 = netx.shortest_path(G, (start[0], start[1], 0), "finish")
+    t1 = len(path1) - 1
+    print("First path (Dijkstra)", t1)
+
+    path2 = netx.shortest_path(G, (end[0], end[1], t1 % n_total), "start")
+    t2 = len(path2) - 1
+    print("Second path (Dijkstra)", t2)
+
+    path3 = netx.shortest_path(G, (start[0], start[1], (t1 + t2) % n_total), "finish")
+    t3 = len(path3) - 1
+    print("Third path (Dijkstra)", t3)
+
+    print("Solution (Dijkstra)", t1 + t2 + t3)
 #import astar
 #A_path = astar.find_path((start[0], start[1], 0), "finish", neighbors_fnct=neighbours)
 #                    heuristic_cost_estimate_fnct=cost, distance_between_fnct=distance))
