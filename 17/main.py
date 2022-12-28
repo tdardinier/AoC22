@@ -1,9 +1,7 @@
-s = ">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"
 s = open("input.txt", "r").readlines()[0][:-1]
 # Left bottom = (0, 0)
 
-n_rocks = 100000
-#n_rocks = 2022
+n_rocks = 200000
 
 rocks = []
 rocks.append([(2, 0), (3, 0), (4, 0), (5, 0)])
@@ -18,7 +16,7 @@ directions["<"] = (-1, 0)
 
 # From 0 to 6
 field = set([])
-current_highest_y_in_field = -1
+current_highest_y_in_field = 0
 
 i_rock = 0
 i_jet = 0
@@ -28,13 +26,12 @@ current_rock = []
 def maxi_y():
     global current_highest_y_in_field
     return current_highest_y_in_field
-    #m = -1
-    #for (_, y) in field:
-    #    m = max(m, y)
-    #for (_, y) in current_rock:
-    #    m = max(m, y)
-    #assert m == current_highest_y_in_field
-    #return m
+    m = -1
+    for (_, y) in field:
+        m = max(m, y)
+    for (_, y) in current_rock:
+        m = max(m, y)
+    return m
 
 def print_grid():
     y_max = maxi_y()
@@ -90,6 +87,7 @@ def fall_one_step():
         current_rock = new_rock
     return valid
 
+heights = [0]
 def make_next_rock_fall():
     global current_rock, i_rock, current_highest_y_in_field
     add_rock(rocks[i_rock])
@@ -103,15 +101,11 @@ def make_next_rock_fall():
         current_highest_y_in_field = max(current_highest_y_in_field, y)
         field.add((x, y))
 
-offset = 1000
-
-heights = []
 for i in range(n_rocks):
     if (i % 1000 == 0):
         print(i, n_rocks)
-    if (i >= offset):
-        heights.append(maxi_y() + 1)
     make_next_rock_fall()
+    heights.append(current_highest_y_in_field)
 
 m = maxi_y() + 1
 print(m)
@@ -128,41 +122,27 @@ def collect_x_from_row(y):
             s.add(x)
     return s
 
+offset = 1000
+heights = heights[offset:]
 
-periods = set()
-for potential_period in range(2, 20000):
-    # We check for period in heights
+period = None
+for potential_period in range(20000):
+    # We check 10 things
     b = True
-    #offset = 1000
     sets = []
 
-    b = True
-    for i in range(500):
-        x = heights[i]
-        y = heights[i + potential_period]
-        z = heights[i + 2 * potential_period]
-        b = b and (z - y == y - x)
-        # b = b and (heights[offset + i] == heights[offset + i + potential_period])
+    for i in range(4):
+        da = heights[(i + 2) * potential_period] - heights[(i + 1) * potential_period]
+        db = heights[(i + 1) * potential_period] - heights[i * potential_period]
+        b = b and (da == db)
     if b:
-        for x in periods:
-            b = b and (potential_period % x != 0)
-        if b:
-            periods.add(potential_period)
-            print("Found!", potential_period)
+        print("Found!", potential_period)
+        if potential_period > 0 and period is None:
+            period = potential_period
 
-    # if collect_x_from_row(offset + potential_period) == collect_x_from_row(offset + 2 * potential_period):
-    #for i in range(4):
-    #    sets.append(per_row[offset + i * potential_period])
-    #for x in sets:
-    #    for y in sets:
-    #        b = b and x == y
-    #if b:
-    #    print("Found!", potential_period)
 
-# Period = 53
-# Period = 2574
-def compute_height_with_period(period, xx):
-    #say we start at 1000
-    x = xx - offset
+def compute_with_period(x):
+    x -= offset
     return heights[x % period] + (x // period) * (heights[period] - heights[0])
-
+print("Answer to first task", compute_with_period(2022))
+print("Answer to second task", compute_with_period(1000000000000))
